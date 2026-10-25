@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Victoria 3 · pop 与经济系统拆解（进行中）</title>
+<style>
+  :root{
+    --bg:#fbfbf9; --ink:#17181a; --mut:#6d6f73; --line:#e4e4e0;
+    --acc:#0d6f63; --tag-bg:#eef3f1; --wip:#8a6d1f; --wip-bg:#f7f1e0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Inter","PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    font-size:15.5px; line-height:1.78; font-feature-settings:"tnum";
+  }
+  main{max-width:720px;margin:0 auto;padding:56px 24px 96px}
+  .eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--acc);font-weight:600;margin-bottom:22px}
+  h1{font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1.25}
+  .lede{margin-top:12px;color:var(--mut);font-size:15px}
+  .note{margin-top:22px;padding:14px 16px;border-left:2px solid var(--wip);color:var(--mut);font-size:13.5px;line-height:1.72;background:var(--wip-bg)}
+  h2{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin:52px 0 6px;padding-bottom:9px;border-bottom:1px solid var(--ink)}
+  h3{font-size:16.5px;font-weight:600;margin:26px 0 6px}
+  p{margin-top:10px}
+  ul{margin:10px 0 0 20px}
+  li{margin-top:6px}
+  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+  th,td{text-align:left;padding:8px 10px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:600;font-size:12.5px;letter-spacing:.04em;color:var(--mut)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em;background:#f1f1ee;padding:1px 5px;border-radius:3px}
+  .tag{font-size:11px;padding:1px 8px;border-radius:100px;background:var(--wip-bg);color:var(--wip);font-weight:500;white-space:nowrap;vertical-align:middle}
+  a{color:var(--acc);text-decoration:none;border-bottom:1px solid rgba(13,111,99,.28)}
+  a:hover{border-bottom-color:var(--acc)}
+  .muted{color:var(--mut);font-size:13.5px}
+  footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--ink);font-size:13.5px;color:var(--mut)}
+</style>
+</head>
+<body>
+<main>
+
+<div class="eyebrow">Mechanism teardown · work in progress</div>
+<h1>Victoria 3 · pop 与经济系统拆解</h1>
+<p class="lede">不靠二手评测，直接读游戏安装目录里的脚本、<code>defines</code> 与本地化文案，把机制还原成可引用的数据。</p>
+
+<div class="note">
+  <b>这一页是进度页，不是成稿。</b>拆解的事实层已经做完（变更集锚定 <code>release/1.13.11</code>），
+  面向读者重写的分析稿还在整理，完成后会替换本页。当前先公开方法和已核实的量级，
+  以便对方判断这件事做到什么程度。
+</div>
+
+<h2>一 · 方法与口径</h2>
+<table>
+  <tr><th>项</th><th>内容</th></tr>
+  <tr><td>对象</td><td>Victoria 3 <code>release/1.13.11</code>（2026-09 拆解）</td></tr>
+  <tr><td>方法</td><td><b>直读本体文件</b>：<code>game/common/</code> 下 133 个目录、82 份 modding 文档、<code>defines</code> 各块的精确行号、<code>localization/</code> 下的概念百科文案</td></tr>
+  <tr><td>产出</td><td>三份挖掘报告（pop 本体 / 商品替代·成瘾·名牌商品 / 文件寻址索引），约 125 KB</td></tr>
+  <tr><td>可靠性分层</td><td><b>【一手】</b>＝直接读原始数据文件得到的数值与字段名；<b>【推断】</b>＝可迁移性判断与设计启示，属整理者归纳，可被推翻</td></tr>
+  <tr><td>已知局限</td><td>V3 无全局岗位池，岗位写在建筑 PM 的 <code>level_scaled</code> 里；结论锚定 1.13.11，后续版本可能改动</td></tr>
+</table>
+
+<h2>二 · 已核实的量级</h2>
+<table>
+  <tr><th>系统</th><th>规模</th></tr>
+  <tr><td>经济骨架</td><td>商品 <b>53</b> · 建筑 <b>111</b> · 生产配方 <b>365</b></td></tr>
+  <tr><td>pop 系统</td><td><b>15</b> 种职业 · <b>99</b> 级财富 · <b>15</b> 类需求 · 激进化三条通道 · 人口增长四段折线</td></tr>
+  <tr><td>成瘾体系</td><td>文化痴迷 <b>11</b> 种商品 + 宗教禁忌 <b>3</b> 种；<code>obsession_chance</code> 最高为 opium（10.0，断层第一）</td></tr>
+  <tr><td>名牌商品</td><td><b>72</b> 个（具名 56 + generic 16）；解锁条件＝世界产量前 3 并维持 36 个月</td></tr>
+  <tr><td>公司</td><td><b>218</b> 家，繁荣度四路合成，含滞回阈值与 4 类特许</td></tr>
+</table>
+
+<h2>三 · 三个值得单说的发现</h2>
+
+<h3>1 · 商品替代不吃价格，吃供给份额</h3>
+<p>
+  二手分析常把 V3 的替代关系说成"贵了就换便宜的"。读 <code>goods</code> 参数结构后可以确认：
+  权重由商品在市场 Sell Order 中的份额决定（<code>max_supply_share</code> / <code>min_supply_share</code> 控制上下限），
+  <b>价格不是该层的直接变量</b>——价格是通过影响买卖单再间接传导的。这一条修正了此前报告里"不依赖价格"这个不精确表述。
+</p>
+
+<h3>2 · 需求层有一个"爱好桶"</h3>
+<p>
+  <code>popneed_leisure</code> 的机制含义更接近"任意可消费物都能填的桶"，而不是某类具体商品的集合。
+  这解释了为什么非常规品类（武器、艺术品等）也能形成痴迷——机制上并不需要专门为它们开一条需求线。
+</p>
+
+<h3>3 · 唯一解释机制的地方不在 wiki，在本地化文案</h3>
+<p>
+  <code>localization/…/concepts_l_*.yml</code> 里的概念百科是本作<b>唯一</b>给出机制解释而非仅字段名的文本层。
+  前两轮挖掘漏了它，第三轮补上后，若干先前只能靠参数反推的行为得到了官方口径的印证。
+</p>
+
+<h2>四 · 还没做完的</h2>
+<ul>
+  <li><b>面向读者的重写</b>：现有三份报告是给自家项目用的工作文档（满篇 <code>【数据】/【推断】</code> 标记、字段名、行号），不是可读的分析稿。</li>
+  <li><b>迁移层的实例化</b>：把 pop × 需求 × 商品替代的结构，对照自己项目里"资源链 + 回合结算"的设计，说清楚学了什么、刻意不学什么。这部分只有结论，还没成文。</li>
+  <li><b>版本追踪</b>：1.13.11 之后的改动未回查。</li>
+</ul>
+
+<h2>五 · 为什么先放出这一页</h2>
+<p>
+  拆解的价值在过程，不在结论的漂亮程度。已经核实到字段级的部分是确定的，可以立刻接受检验；
+  分析稿则需要重写一遍才配得上"文章"二字。把两者分开，比等一个完美版本更诚实。
+</p>
+
+<footer>
+  <p>施予衎 · <a href="mailto:13661632419@163.com">13661632419@163.com</a> · <a href="../">返回作品集</a></p>
+  <p style="margin-top:8px">最后更新 2026-10-25</p>
+</footer>
+
+</main>
+</body>
+</html>
