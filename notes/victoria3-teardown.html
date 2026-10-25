@@ -72,6 +72,30 @@
 
 <h2>三 · 三个值得单说的发现</h2>
 
+<h3>0 · 先看一眼原始材料长什么样</h3>
+<p>
+  一手性不靠自我介绍。下面是 <code>pop_needs/00_pop_needs.txt</code> 里 <code>basic_food</code> 一类的原文片段
+  （字段注释为游戏自带的 modding 文档，非我加注）：
+</p>
+<pre style="margin-top:12px;padding:14px 16px;background:#f4f4f1;border:1px solid var(--line);border-radius:4px;overflow-x:auto;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.65;color:#2a2f34">popneed_basic_food = {
+    default = grain
+
+    obsession_demand_min  = 0.75
+    obsession_demand_mult = 1.75
+    prestige_goods_demand_increase = 0.75
+
+    entry = {
+        goods = grain
+        weight = 0.85              # 相对权重
+        max_supply_share = 0.9     # 供给份额超过此值后不再提升权重
+        min_supply_share = 0.0     # >0 时无论供给多少都保底这么多权重
+    }
+    # …另有 fish / meat / fruit / groceries，各带 max_supply_share
+}</pre>
+<p class="muted">
+  ⚠️ 引用目的是说明方法（读什么、读到什么粒度），不作为 mod 教程；数值随版本变动，以 1.13.11 为准。
+</p>
+
 <h3>1 · 商品替代不吃价格，吃供给份额</h3>
 <p>
   二手分析常把 V3 的替代关系说成"贵了就换便宜的"。读 <code>goods</code> 参数结构后可以确认：
