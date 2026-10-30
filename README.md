@@ -1,11 +1,11 @@
-# 作品集（工作版）
+# 作品集
 
 > 施予衎　·　游戏系统设计 / AI agent 工程 / 内容创作
 > 线上地址：https://yuki-0079.github.io/portfolio/
 
 ## 这是什么
 
-一份**持续更新的作品集**。定位是「工作版」：内容仍在校对补充，定稿后会发到公开平台。
+一份**持续更新**的个人作品集，按「能玩 / 能看 / 能读」组织；每条目标注当前状态与已知边界（已上线 / 可通关 / 切片已交付 / 长文全文）。
 
 放在 GitHub Pages 而不是公开内容平台，理由是**这里的版本可以随时改**，而公开平台的文章一发出去就冻结了。
 
@@ -13,9 +13,11 @@
 
 ```
 index.html                          作品集首页
-robots.txt / .nojekyll              不让搜索引擎收录；关闭 Jekyll
- games/
+games/
 └── combat-exterior-system.html     零时之塔 · 战斗外系统设计说明（S1–S10，图片内嵌）
+notes/
+├── victoria3-economic-teardown.html《维多利亚 3》经济与 Pop 系统拆解（9 800 字全文）
+└── victoria3-teardown.html         该长文的方法与素材页
 ```
 
 ## 更新规矩（自己守）
