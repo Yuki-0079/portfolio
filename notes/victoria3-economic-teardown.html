@@ -119,7 +119,7 @@
     }
 }
 </code></pre>
-<p><code>workforce_scaled</code> 下的物料投入与产出严格按建筑当前的“实际人力配备率”线性缩放（招不满人则等比例减产）；<code>level_scaled</code> 下的岗位需求则只按“建筑等级”缩放（V3 没有全局岗位池，全国就业容量完全由各建筑等级下的 <code>level_scaled</code> 字段加总生成）。</p>
+<p><code>workforce_scaled</code> 下的物料投入与产出严格按建筑当前的“实际人力配备率”线性缩放；<code>level_scaled</code> 下的岗位需求则只按“建筑等级”缩放（V3 没有全局岗位池，全国就业容量完全由各建筑等级下的 <code>level_scaled</code> 字段加总生成）。</p>
 <p>源码右侧保留了一处关键的官方注释：开发者直接用商品的静态基础价格（谷物 <code>cost = 20</code>、杂货 <code>cost = 30</code>）乘以投入产出量，在脚本里手算单级建筑的静态毛利（<code>1350 - 800 = 550</code>）。在跨度达 4–5 级的产业链中——例如“煤矿（连最原始的镐铲开采 <code>pm_picks_and_shovels</code> 都需消耗 <code>tools × 5</code> 产出 <code>coal × 25</code>）+ 铁矿 → 钢铁厂 → 工具厂 → 矿山机械”——这套静态基础价格就是设计者在配平投入产出有向图时使用的统一核算标尺。</p>
 <h3 id="12-pop">1.2 Pop 的多轴坐标与消费包的结构性替换</h3>
 <p>在人口侧，单个 pop 实体所处的位置由一套多维坐标决定：<code>社会分层体系（social_hierarchy） → 社会阶级（social_class） → 职业类型（pop_type，15 种） × 财富等级（wealth，99 级） × 文化 × 宗教</code>。</p>
@@ -162,15 +162,15 @@
 </blockquote>
 <p>把脚本参数与官方百科合起来看，V3 实际上将需求结算拆成了职责截然不同的三步：</p>
 <ol>
-<li><strong>替代方向（买什么）</strong>：完全由物理供给份额（卖单占比 × <code>weight</code>）决定，<strong>不依赖价格</strong>。市场产什么，pop 就跟着消费什么；</li>
-<li><strong>替代量纲（1 单位抵多少需求点数）</strong>：由商品的静态基础价格 <code>cost</code> 承担，<strong>依赖基础价格，但不依赖实时市场价格</strong>；</li>
-<li><strong>购买力结算（买不买得起）</strong>：由实时市场价格（在 <code>cost</code> 的 <code>±75%</code> 区间波动）与 pop 收入决定，直接影响 SoL 升降。</li>
+<li><strong>替代方向</strong>：完全由物理供给份额（卖单占比 × <code>weight</code>）决定，<strong>不依赖价格</strong>。市场产什么，pop 就跟着消费什么；</li>
+<li><strong>替代量纲</strong>：由商品的静态基础价格 <code>cost</code> 承担，<strong>依赖基础价格，但不依赖实时市场价格</strong>；</li>
+<li><strong>购买力结算</strong>：由实时市场价格（在 <code>cost</code> 的 <code>±75%</code> 区间波动）与 pop 收入决定，直接影响 SoL 升降。</li>
 </ol>
 <p>这一拆分让 V3 的需求结构顺应生产侧的物质可供性（availability）流动，不随短期价格信号剧烈摆动。工程上，这规避了“价格变动 ↔ 需求替代”双向实时耦合引发的高频震荡；机制上，则将“消费结构”与“购买力水平”拆在了两个独立层面。</p>
 <h3 id="22">2.2 偏好调制：文化痴迷与宗教禁忌的四层传导</h3>
 <p>如果只有供给份额替代，需求层就只是一个纯技术性的分配器。为了表达历史与文化对偏好的扭曲，V3 叠加了“文化痴迷”（obsession）与“宗教禁忌”（taboo）双层调制。</p>
 <p>宗教禁忌写在 <code>common/religions/religion.txt</code> 中，全作仅 3 条（伊斯兰教三派禁 <code>liquor</code> 与 <code>wine</code>、犹太教禁 <code>groceries</code>、印度教禁 <code>meat</code>），效果是需求权重乘以 <code>TABOO_DEMAND_MULT = 0.5</code>。文化层（<code>common/cultures/00_cultures.txt</code>）除了定义 11 种商品、共 85 处初始痴迷外，同样允许定义 <code>taboos</code>，且源码注释明确声明文化禁忌覆盖宗教禁忌（<code># overrides religion taboos</code>）。</p>
-<p>在商品定义文件 <code>00_goods.txt</code> 中，每个可被痴迷的商品都带有一个成瘾倾向系数 <code>obsession_chance</code>（其余 31 种工业/军事/基础品无此字段，即机制上不可被痴迷），其数值分布呈明显的分类学梯度：</p>
+<p>在商品定义文件 <code>00_goods.txt</code> 中，每个可被痴迷的商品都带有一个成瘾倾向系数 <code>obsession_chance</code>（其余 31 种工业/军事/基础品无此字段，机制上不可被痴迷），其数值分布呈明显的分类学梯度：</p>
 <ul>
 <li><strong><code>10.0</code>（极值隔离）</strong>：<code>opium</code>（鸦片）——全作唯一的高位极值，是第二梯队的 5 倍；</li>
 <li><strong><code>2.0</code>（传统成瘾品）</strong>：<code>liquor</code>, <code>wine</code>, <code>tobacco</code>；</li>
@@ -186,7 +186,7 @@
 <h3 id="23">2.3 名牌商品：市场垄断与符号承认如何进入生产函数</h3>
 <p>Charters of Commerce 引入的名牌商品（prestige goods）与特许公司体系，进一步把“市场地位与符号承认”写进了底层公式。</p>
 <p>全作共 72 个名牌商品（挂载于 218 家公司中的 144 家），分为两级：56 个具名历史品牌（如克虏伯火炮、福特汽车、阿萨姆红茶）在对应历史公司成立并繁荣时直接产出；16 个通用名牌（<code>prestige_good_generic_*</code>）则必须通过 <code>journal_entries/05_prestige_goods.txt</code> 的全球竞争机制解锁——<strong>国内相关公司保持繁荣（prosperous），且本国在该基础商品上的全球产量排名前 3（<code>goods_production_rank &lt;= 3</code>），连续维持 36 个月</strong>。</p>
-<p>公司繁荣度由生产率、满员建筑等级数和行政长官受欢迎度合成，且在 <code>NEconomy</code> 中设计了极陡的“涨慢跌快”斜率与滞回死区（hysteresis）：每周基础增长仅 <code>+0.2</code>，基础衰减却高达 <code>-1.0</code>（相差 5 倍）；繁荣度满 <code>100</code> 才激活增益，跌破 <code>75</code> 才失效。</p>
+<p>公司繁荣度由生产率、满员建筑等级数和行政长官受欢迎度合成，且在 <code>NEconomy</code> 中设计了极陡的“涨慢跌快”斜率与滞回死区（hysteresis）：每周基础增长仅 <code>+0.2</code>，基础衰减却高达 <code>-1.0</code>；繁荣度满 <code>100</code> 才激活增益，跌破 <code>75</code> 才失效。</p>
 <p>名牌商品不新增独立商品种类，而是作为基础商品（<code>base_good</code>）的符号强化态，按占比在四个维度生效（据 <code>concept_prestige_good_desc</code> 官方文案与 <code>NEconomy</code> 常量）：</p>
 <ul>
 <li><strong>消费端</strong>：需求权重提升 <code>50%</code>（<code>leisure</code> 类别内 <code>+100%</code>），为消费它的 pop 提供最高 <code>+20%</code> 的 SoL 加成，并使该商品诱发动态文化痴迷的概率乘以 <strong><code>5</code></strong>（<code>OBSESSION_SPAWN_CHANCE_PRESTIGE_GOODS_MULT = 4.0</code>）；</li>
@@ -229,7 +229,7 @@
 </table></div>
 <p>这组系数直接亮出了设计者的政治社会学判断：</p>
 <ol>
-<li><strong>受歧视通道的斜率与上限远高于单纯贫穷</strong>（<code>0.005</code> vs <code>0.003</code>，封顶 <code>50%</code> vs <code>15%</code>），且<strong>由识字率正向放大</strong>。如果把这条规则与转职资格公式（如 <code>aristocrats.txt</code> 的 <code>qualifications</code>）并置对照，就能看清其中的耦合链条：在转职公式里，识字率与财富共同构成阶层上升的乘数，但一旦该 pop 的文化受歧视（接纳度 <code>&lt; 4</code>），资格增长率会直接乘以 <strong><code>0.1</code>（打一折）</strong>。普及教育原本旨在打开阶层流动通道；当制度性歧视把上升通道锁死（<code>×0.1</code>）时，识字率就会立刻在激进化公式里反转为制造激进分子的放大器。</li>
+<li><strong>受歧视通道的斜率与上限远高于单纯贫穷</strong>（<code>0.005</code> vs <code>0.003</code>，封顶 <code>50%</code> vs <code>15%</code>），且<strong>由识字率正向放大</strong>。如果把这条规则与转职资格公式（如 <code>aristocrats.txt</code> 的 <code>qualifications</code>）并置对照，就能看清其中的耦合链条：在转职公式里，识字率与财富共同构成阶层上升的乘数，但一旦该 pop 的文化受歧视（接纳度 <code>&lt; 4</code>），资格增长率会直接乘以 <strong><code>0.1</code></strong>。普及教育原本旨在打开阶层流动通道；当制度性歧视把上升通道锁死（<code>×0.1</code>）时，识字率就会立刻在激进化公式里反转为制造激进分子的放大器。</li>
 <li><strong>断粮是斜率最陡的政治引信</strong>（月增 <code>2%</code>、封顶 <code>75%</code>），这与 <code>laborers.txt</code> 中政治参与度乘数（<code>political_engagement_mult</code> 在轻/重度饥荒时分别 <code>+0.25</code> 和 <code>+1.0</code>，大于“政治煽动”科技的 <code>×1.5</code>）完全咬合。</li>
 <li><strong>富裕阶层的情绪钝化</strong>：除三通道外，SoL 发生短期升降时还会按 <code>0.03</code> 的比例转化忠诚或激进，但该系数在 SoL 超过 <code>15</code> 后开始线性衰减，到 SoL <code>30</code> 时最多衰减为原来的 <code>1/10</code>。富人的境遇波动被设定为更难转化为激进政治情绪。</li>
 </ol>
@@ -245,7 +245,7 @@
 <p>真正构成上限的，是由底层表征方式锁死的结构性边界：只要沿用当前前提，有些部分在逻辑上就无法成立。V3 之所以只能算本体“式”演绎，原因正在于此。</p>
 <h3 id="31">3.1 标量价格对价值形式的遮蔽</h3>
 <p>V3 整个经济循环的唯一引擎是<strong>价格</strong>。建筑扩招（要求目标利润率 <code>BUILDING_PROFIT_TARGET_TO_HIRE = 0.25</code>）、提薪（<code>0.25</code>）、裁员、pop 升降财富等级，全部由实时价格驱动；而实时价格的算法，是在 <code>00_goods.txt</code> 预设的静态基础价格 <code>cost</code> 之上，按当前市场买卖单比例在 <code>±75%</code> 区间内夹逼。</p>
-<p>用单一标量（价格）做全局协调信号，工程上大幅压缩了跨部门余缺的计算成本，政治经济学上却直接抹平了价值形式。</p>
+<p>用价格这一个标量做全局协调信号，工程上大幅压缩了跨部门余缺的计算成本，政治经济学上却直接抹平了价值形式。</p>
 <p>价格形式本身就包含着价格与价值量发生偏离的可能；而在现实生产中，随着生产力与技术条件变革，单位商品所凝结的社会必要劳动时间会持续移动，从而重塑整个商品体系的相对价值底座。但在 V3 里，由于底层不核算劳动时间，商品的“价值底座”被置换成了脚本里写死的静态常数 <code>cost</code>。查 <code>01_industry.txt</code> 的钢铁厂配方可以看到：从早期的渗碳钢（<code>pm_blister_steel</code>，铁 40 + 煤 30 → 钢 65）一路升级到贝塞麦转炉（钢 90）、平炉（钢 120）乃至电弧炉（<code>pm_electric_arc</code>，铁 100 + 煤 30 + 电 30 → 钢 150），单位钢铁所需的活劳动与物料配比发生了根本改变，但钢铁的基础价格 <code>cost</code> 始终不变；生产力进步只表现为市场卖单增加、把实时价格往 <code>-75%</code> 的地板上压。V3 实际上是用“围绕静态预设常数的供求波动”，顶替了“由生产力变革驱动的价值尺度重估”。</p>
 <p>同时，在建筑的 <code>building_modifiers</code> 账面上，原料投入、工具损耗、资本家股息与工人工资被并置为完全同质的货币收支项。系统能算出每一级建筑的利润率，却在表征层面抹掉了“生产资料价值的转移”与“活劳动创造的新价值”的界限。标量价格完成了数值闭环，但作为社会关系的价值形式在这个框架里是不可见的。</p>
 <h3 id="32">3.2 利润导向的排他性与“为使用而生产”的缺席</h3>
@@ -286,7 +286,7 @@
 <tr>
 <td><strong>分级跃迁的滞回死区</strong>（如财富 <code>1.02/0.98</code>、繁荣 <code>100/75</code>）</td>
 <td><strong>直接保留</strong></td>
-<td>防止离散状态机在阈值边界每回合高频横跳的通用控制工程设计（在 V3 中反复出现了三次）。</td>
+<td>防止离散状态机在阈值边界每回合高频横跳的通用控制工程设计。</td>
 </tr>
 <tr>
 <td><strong>价格–工资–利润回路与 99 级购买力消费包</strong></td>
@@ -301,7 +301,7 @@
 <div class="formula">单位产品全链工时　＝　<span class="frac"><span class="num">岗位数 × 生产天数</span><span class="den">产出量</span></span>　＋　Σ（单位原料消耗 × 原料全链工时）</div>
 
 <p>数学形式上，这就是一个标准的 <strong>Leontief 型投入产出逆矩阵</strong>：把配方表和岗位需求输进去，就能离线算出每一种产品的全链凝结工时（设计期再辅以资源品位和空间运输距离做多轴校准，不进玩家 UI）。</p>
-<p>由此可以推导出一个政治经济学结论：<strong>在没有市场的系统里，劳动价值论作为核算标尺反而比在现实市场（以及 V3）中更直接、更纯粹地成立。</strong></p>
+<p>由此可以推导出一个政治经济学结论：<strong>在没有市场的系统里，劳动价值论作为核算标尺反而比在现实市场中更直接、更纯粹地成立。</strong></p>
 <p>原因恰恰反证了 §3.1：在市场体系下，价格围绕价值的供求波动、垄断溢价与要素报酬转化，构成了掩盖背后劳动消耗的“偏离项”；而在彻底移除了货币与市场交换的模拟中，这个偏离项从结构上消失了，凝结工时没有竞争者，直接成为设计期唯一的同质化核算尺度。随之而来的另一个推论是，<strong>技术进步在系统内部变成了实打实的净增益</strong>：市场条件下“技术省劳”往往伴随着价格战、资本截留或结构性失业；而在一个劳动力真正稀缺、以实物与工时直接平衡的封闭系统里，“新配方使单位产品工时含量下降”直接等于“同样的稀缺劳动力能养活更多人、产出更多使用价值”。</p>
 <h3 id="42">4.2 人口本体重构：内稳态存量、三层解耦与还原边界的再审视</h3>
 <p>在人口与消费侧，为了不让失去购买力机制的 pop 退化成死板的配给接收器，对照原型将 pop 重构为拥有<strong>内部稳态存量（homeostatic stock）</strong>的主体，并严格拆成不可混同的三层：</p>
