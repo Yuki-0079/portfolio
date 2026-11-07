@@ -16,7 +16,8 @@ index.html                          作品集首页
 games/
 └── combat-exterior-system.html     零时之塔 · 战斗外系统设计说明（S1–S10，图片内嵌）
 notes/
-├── victoria3-economic-teardown.html《维多利亚 3》经济与 Pop 系统拆解（9 800 字全文）
+├── victoria3-economic-teardown-v3.html《维多利亚 3》经济与 Pop 系统拆解（图文整合版）
+├── victoria3-economic-teardown-v3-share.pdf 该文的分享版 PDF
 └── victoria3-teardown.html         该长文的方法与素材页
 ```
 
